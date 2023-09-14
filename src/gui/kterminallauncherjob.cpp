@@ -135,6 +135,12 @@ void KTerminalLauncherJob::determineFullCommand(bool fallbackToKonsoleService /*
     if (exec.startsWith(QLatin1String("konsole")) && !workingDir.isEmpty()) {
         exec += QLatin1String(" --workdir %1").arg(KShell::quoteArg(workingDir));
     }
+    if (exec.startsWith(QLatin1String("kitty")) && !workingDir.isEmpty()) {
+        exec += QLatin1String(" --working-directory=%1").arg(KShell::quoteArg(workingDir));
+    }
+    // if (exec.startsWith(QLatin1String("alacritty")) && !workingDir.isEmpty()) {
+    // exec += QLatin1String(" --working-directory %1").arg(KShell::quoteArg(workingDir));
+    // }
     if (!d->m_command.isEmpty()) {
         exec += QLatin1String(" -e ") + d->m_command;
     }

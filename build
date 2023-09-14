@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+usage_error () { echo >&2 "$(basename "$0"):  $1"; exit 2; }
+assert_argument () { test "$1" != "${EOL}" || usage_error "$2 requires an argument"; }
+
+show_options() {
+    echo "Usage: build [OPTIONS]";
+    echo "Options:";
+    echo "-h    / --help            - Show this help";
+    echo "-b    / --build           - build";
+    echo "";
+}
+
+BUILD_OPT="";
+# shellcheck disable=SC2116,SC2028,SC2001,SC2312
+if [[ "$#" != 0 ]]; then
+    EOL=$(echo '\01\03\03\07')
+    set -- "$@" "${EOL}"
+    while [[ "$1" != "${EOL}" ]]; do
+        opt="$1"; shift
+        case "${opt}" in
+            # Your options go here.
+            -h|--help) help='true';;
+            -b|--build) build='true';;
+
+            # Arguments processing. You may remove any unneeded line after the 1st.
+            # positional argument, rotate to the end
+            -|''|[!-]*) set -- "$@" "${opt}";;
+            # convert '--name=arg' to '--name' 'arg'
+            --*=*)      set -- "${opt%%=*}" "${opt#*=}" "$@";;
+            -[!-]?*)    set -- "$(echo "${opt#-}" | sed 's/\(.\)/ -\1/g')" "$@";;       # convert '-abc' to '-a' '-b' '-c'
+            --)         while [[ "$1" != "${EOL}" ]]; do set -- "$@" "$1"; shift; done;;  # process remaining arguments as positional
+            -*)         usage_error "unknown option: '${opt}'";;                        # catch misspelled options
+            *)          usage_error "this should NEVER happen (${opt})";;               # sanity test for previous patterns
+        esac
+  done
+  shift  # $EOL
+fi
+
+if [[ -n "${help+x}" ]]; then
+    show_options;
+    exit 0;
+elif [[ -n "${build+x}" ]]; then
+    BUILD_OPT="true";
+else
+    show_options;
+    exit 0;
+fi
+
+
+unset ASFLAGS
+export AR=gcc-ar
+export RANLIB=gcc-ranlib
+export NM=gcc-nm
+# unset LIBRARY_PATH
+# unset LD_LIBRARY_PATH
+unset CFLAGS
+unset ASMFLAGS
+unset FCFLAGS
+unset FFLAGS
+unset LDFLAGS
+unset CXXFLAGS
+# -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -Wp,-U_FORTIFY_SOURCE=0 -Wp,-D_FORTIFY_SOURCE=0 -Wp,-U_FORTIFY_SOURCE
+export CFLAGS="-fstrict-overflow -DNDEBUG -Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -mno-direct-extern-access --param=lto-max-streaming-parallelism=20 -fipa-pta -m64 -Ofast -flto=auto -g0 -mno-vzeroupper -march=skylake -mtune=skylake -mavx -mavx2 -msse2avx -Wall -Wl,--as-needed -Wl,--build-id=sha1 -Wl,--enable-new-dtags -Wl,--hash-style=gnu -Wl,-O2 -Wl,-z,now,-z,relro,-z,max-page-size=0x1000,-z,separate-code -Wno-error -mprefer-vector-width=256 -falign-functions=32 -fdevirtualize-at-ltrans -floop-nest-optimize -floop-block -fno-math-errno -fno-semantic-interposition -Wl,-Bsymbolic-functions -fno-stack-protector -fno-trapping-math -ftree-loop-distribute-patterns -ftree-loop-vectorize -ftree-slp-vectorize -ftree-vectorize -fuse-ld=bfd -fuse-linker-plugin -malign-data=cacheline -mrelax-cmpxchg-loop -feliminate-unused-debug-symbols -feliminate-unused-debug-types -flive-range-shrinkage -fno-plt -mtls-dialect=gnu2 -Wl,-sort-common -Wno-error -Wp,-D_REENTRANT -pipe -ffat-lto-objects -fomit-frame-pointer -static-libstdc++ -static-libgcc -mrelax-cmpxchg-loop -pthread -Wl,--build-id=sha1 -Wno-inline -Wno-comment -Wno-int-in-bool-context -fasynchronous-unwind-tables"
+export ASMFLAGS="-fstrict-overflow -DNDEBUG -Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -mno-direct-extern-access --param=lto-max-streaming-parallelism=20 -fipa-pta -m64 -Ofast -flto=auto -g0 -mno-vzeroupper -march=skylake -mtune=skylake -mavx -mavx2 -msse2avx -Wall -Wl,--as-needed -Wl,--build-id=sha1 -Wl,--enable-new-dtags -Wl,--hash-style=gnu -Wl,-O2 -Wl,-z,now,-z,relro,-z,max-page-size=0x1000,-z,separate-code -Wno-error -mprefer-vector-width=256 -falign-functions=32 -fdevirtualize-at-ltrans -floop-nest-optimize -floop-block -fno-math-errno -fno-semantic-interposition -Wl,-Bsymbolic-functions -fno-stack-protector -fno-trapping-math -ftree-loop-distribute-patterns -ftree-loop-vectorize -ftree-slp-vectorize -ftree-vectorize -fuse-ld=bfd -fuse-linker-plugin -malign-data=cacheline -mrelax-cmpxchg-loop -feliminate-unused-debug-symbols -feliminate-unused-debug-types -flive-range-shrinkage -fno-plt -mtls-dialect=gnu2 -Wl,-sort-common -Wno-error -Wp,-D_REENTRANT -pipe -ffat-lto-objects -fomit-frame-pointer -static-libstdc++ -static-libgcc -mrelax-cmpxchg-loop -pthread -Wl,--build-id=sha1 -Wno-inline -Wno-comment -Wno-int-in-bool-context -fasynchronous-unwind-tables"
+export FCFLAGS="-fstrict-overflow -DNDEBUG -Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -mno-direct-extern-access --param=lto-max-streaming-parallelism=20 -fipa-pta -m64 -Ofast -flto=auto -g0 -mno-vzeroupper -march=skylake -mtune=skylake -mavx -mavx2 -msse2avx -Wall -Wl,--as-needed -Wl,--build-id=sha1 -Wl,--enable-new-dtags -Wl,--hash-style=gnu -Wl,-O2 -Wl,-z,now,-z,relro,-z,max-page-size=0x1000,-z,separate-code -Wno-error -mprefer-vector-width=256 -falign-functions=32 -fdevirtualize-at-ltrans -floop-nest-optimize -floop-block -fno-math-errno -fno-semantic-interposition -Wl,-Bsymbolic-functions -fno-stack-protector -fno-trapping-math -ftree-loop-distribute-patterns -ftree-loop-vectorize -ftree-slp-vectorize -ftree-vectorize -fuse-ld=bfd -fuse-linker-plugin -malign-data=cacheline -mrelax-cmpxchg-loop -feliminate-unused-debug-symbols -feliminate-unused-debug-types -flive-range-shrinkage -fno-plt -mtls-dialect=gnu2 -Wl,-sort-common -Wno-error -Wp,-D_REENTRANT -pipe -ffat-lto-objects -fomit-frame-pointer -static-libstdc++ -static-libgcc -mrelax-cmpxchg-loop -pthread -Wl,--build-id=sha1 -Wno-inline -Wno-comment -Wno-int-in-bool-context -fasynchronous-unwind-tables"
+export FFLAGS="-fstrict-overflow -DNDEBUG -Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -mno-direct-extern-access --param=lto-max-streaming-parallelism=20 -fipa-pta -m64 -Ofast -flto=auto -g0 -mno-vzeroupper -march=skylake -mtune=skylake -mavx -mavx2 -msse2avx -Wall -Wl,--as-needed -Wl,--build-id=sha1 -Wl,--enable-new-dtags -Wl,--hash-style=gnu -Wl,-O2 -Wl,-z,now,-z,relro,-z,max-page-size=0x1000,-z,separate-code -Wno-error -mprefer-vector-width=256 -falign-functions=32 -fdevirtualize-at-ltrans -floop-nest-optimize -floop-block -fno-math-errno -fno-semantic-interposition -Wl,-Bsymbolic-functions -fno-stack-protector -fno-trapping-math -ftree-loop-distribute-patterns -ftree-loop-vectorize -ftree-slp-vectorize -ftree-vectorize -fuse-ld=bfd -fuse-linker-plugin -malign-data=cacheline -mrelax-cmpxchg-loop -feliminate-unused-debug-symbols -feliminate-unused-debug-types -flive-range-shrinkage -fno-plt -mtls-dialect=gnu2 -Wl,-sort-common -Wno-error -Wp,-D_REENTRANT -pipe -ffat-lto-objects -fomit-frame-pointer -static-libstdc++ -static-libgcc -mrelax-cmpxchg-loop -pthread -Wl,--build-id=sha1 -Wno-inline -Wno-comment -Wno-int-in-bool-context -fasynchronous-unwind-tables"
+export LDFLAGS="-fstrict-overflow -DNDEBUG -Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -mno-direct-extern-access --param=lto-max-streaming-parallelism=20 -fipa-pta -m64 -Ofast -flto=auto -g0 -mno-vzeroupper -march=skylake -mtune=skylake -mavx -mavx2 -msse2avx -Wall -Wl,--as-needed -Wl,--build-id=sha1 -Wl,--enable-new-dtags -Wl,--hash-style=gnu -Wl,-O2 -Wl,-z,now,-z,relro,-z,max-page-size=0x1000,-z,separate-code -Wno-error -mprefer-vector-width=256 -falign-functions=32 -fdevirtualize-at-ltrans -floop-nest-optimize -floop-block -fno-math-errno -fno-semantic-interposition -Wl,-Bsymbolic-functions -fno-stack-protector -fno-trapping-math -ftree-loop-distribute-patterns -ftree-loop-vectorize -ftree-slp-vectorize -ftree-vectorize -fuse-ld=bfd -fuse-linker-plugin -malign-data=cacheline -mrelax-cmpxchg-loop -feliminate-unused-debug-symbols -feliminate-unused-debug-types -flive-range-shrinkage -fno-plt -mtls-dialect=gnu2 -Wl,-sort-common -Wno-error -Wp,-D_REENTRANT -pipe -ffat-lto-objects -fomit-frame-pointer -static-libstdc++ -static-libgcc -mrelax-cmpxchg-loop -pthread -Wl,--build-id=sha1 -Wno-inline -Wno-comment -Wno-int-in-bool-context -fasynchronous-unwind-tables"
+export CXXFLAGS="-fstrict-overflow -DNDEBUG -Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -mno-direct-extern-access --param=lto-max-streaming-parallelism=20 -fipa-pta -fvisibility-inlines-hidden -m64 -Ofast -flto=auto -g0 -mno-vzeroupper -march=skylake -mtune=skylake -mavx -mavx2 -msse2avx -Wall -Wl,--as-needed -Wl,--build-id=sha1 -Wl,--enable-new-dtags -Wl,--hash-style=gnu -Wl,-O2 -Wl,-z,now,-z,relro,-z,max-page-size=0x1000,-z,separate-code -Wno-error -mprefer-vector-width=256 -falign-functions=32 -fdevirtualize-at-ltrans -floop-nest-optimize -floop-block -fno-math-errno -fno-semantic-interposition -Wl,-Bsymbolic-functions -fno-stack-protector -fno-trapping-math -ftree-loop-distribute-patterns -ftree-loop-vectorize -ftree-slp-vectorize -ftree-vectorize -fuse-ld=bfd -fuse-linker-plugin -malign-data=cacheline -mrelax-cmpxchg-loop -feliminate-unused-debug-symbols -feliminate-unused-debug-types -flive-range-shrinkage -fno-plt -mtls-dialect=gnu2 -Wl,-sort-common -Wno-error -Wp,-D_REENTRANT -pipe -ffat-lto-objects -fomit-frame-pointer -static-libstdc++ -static-libgcc -mrelax-cmpxchg-loop -pthread -Wl,--build-id=sha1 -Wno-inline -Wno-class-memaccess -Wno-comment -Wno-int-in-bool-context -fasynchronous-unwind-tables"
+### -Wl,--emit-relocs  for bolt
+### Add  -fno-pie -no-pie to all vars if trying to build -no-pie executable (LINKCC)
+# export CCSHARED="-fPIC -fno-pie"
+export CCSHARED="-fPIC"
+
+if [[ -n "${BUILD_OPT}" ]]; then
+    rm -rf ./builddir/ ||:
+    mkdir builddir
+    cmake -G Ninja -DCMAKE_INSTALL_LIBDIR=/usr/lib64 -DKDE_INSTALL_LIBDIR=/usr/lib64 -DLIB_SUFFIX=64 -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_TESTING=OFF -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -S . -B builddir/
+    sd ' -O3' -- ' -Ofast -g0' $(fd -uu --glob *.ninja)
+    ninja -j20 -v -C builddir
+    sudo -E ninja -C builddir install
+fi
